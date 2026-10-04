@@ -33,20 +33,20 @@ jobs:
       - name: Apply Forge 1.20.1 port
         run: python3 patch.py Spatial-GUI
 
-      - name: Build Forge 1.20.1
+      - name: Build Forge 1.20.1 target only
         working-directory: Spatial-GUI
         env:
           CI: 'true'
         run: |
           chmod +x gradlew
-          ./gradlew build --stacktrace --no-daemon --max-workers=1
+          ./gradlew :1.20.1-forge:build --stacktrace --no-daemon --max-workers=1
 
       - name: Collect distributable jar
         run: |
           mkdir -p out
           echo 'JAR candidates:'
-          find Spatial-GUI -type f -path '*/build/libs/*.jar' -print
-          find Spatial-GUI -type f -path '*/build/libs/*.jar' \
+          find Spatial-GUI -type f -path '*/1.20.1-forge/build/libs/*.jar' -print
+          find Spatial-GUI -type f -path '*/1.20.1-forge/build/libs/*.jar' \
             ! -name '*sources*' ! -name '*dev*' ! -name '*javadoc*' \
             -exec cp -v {} out/ \;
           test -n "$(find out -type f -name '*.jar' -print -quit)"
