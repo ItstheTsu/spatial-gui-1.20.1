@@ -1,0 +1,58 @@
+name: Build Spatial GUI Forge 1.20.1
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'patch.py'
+      - '.github/workflows/build-spatial-gui-forge.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Checkout build workspace
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Clone pinned Spatial GUI source
+        run: |
+          git clone https://github.com/tastytrash/Spatial-GUI.git Spatial-GUI
+          cd Spatial-GUI
+          git checkout 52cdf9e267d9c689da866dde66a85db0fc5593f0
+
+      - name: Apply Forge 1.20.1 port
+        run: python3 patch.py Spatial-GUI
+
+      - name: Build Forge 1.20.1
+        working-directory: Spatial-GUI
+        env:
+          CI: 'true'
+        run: |
+          chmod +x gradlew
+          ./gradlew build --stacktrace --no-daemon --max-workers=1
+
+      - name: Collect distributable jar
+        run: |
+          mkdir -p out
+          echo 'JAR candidates:'
+          find Spatial-GUI -type f -path '*/build/libs/*.jar' -print
+          find Spatial-GUI -type f -path '*/build/libs/*.jar' \
+            ! -name '*sources*' ! -name '*dev*' ! -name '*javadoc*' \
+            -exec cp -v {} out/ \;
+          test -n "$(find out -type f -name '*.jar' -print -quit)"
+
+      - name: Upload Forge build
+        uses: actions/upload-artifact@v4
+        with:
+          name: spatial-gui-1.20.1-forge
+          path: out/*.jar
+          if-no-files-found: error
